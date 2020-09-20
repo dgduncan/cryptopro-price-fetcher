@@ -7,6 +7,10 @@ import (
 	"net/http"
 )
 
+const (
+	coinbaseBTCURL = "https://api.coinbase.com/v2/prices/spot?currency=USD"
+)
+
 type coinbaseResponse struct {
 	Data coinbaseData `json:"data"`
 }
@@ -14,26 +18,32 @@ type coinbaseResponse struct {
 type coinbaseData struct {
 	Base     string `json:"base"`
 	Currency string `json:"currency"`
-	Amount   string `json:"Amount"`
+	Amount   string `json:"amount"`
 }
 
 // FetchPriceHTTP http entrypoint for cloud function
 func FetchPriceHTTP(w http.ResponseWriter, r *http.Request) {
 	client := http.DefaultClient
 
-	resp, err := client.Get("https://api.coinbase.com/v2/prices/spot?currency=USD")
+	resp, err := client.Get(coinbaseBTCURL)
 	if err != nil {
 		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	var priceData coinbaseResponse
-	json.Unmarshal(body, &priceData)
+	var pd coinbaseResponse
+	json.Unmarshal(body, &pd)
 
-	fmt.Fprintln(w, priceData.Data.Amount)
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(pd)
 }

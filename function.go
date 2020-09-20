@@ -2,7 +2,6 @@ package cryptopro
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -27,7 +26,6 @@ func FetchPriceHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := client.Get(coinbaseBTCURL)
 	if err != nil {
-		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

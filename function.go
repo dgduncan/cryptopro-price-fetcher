@@ -2,45 +2,33 @@ package cryptopro
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
 	"net/http"
+
+	"github.com/dgduncan/CryptoPro-Alexa-GCP/shared"
 )
 
-const (
-	coinbaseBTCURL = "https://api.coinbase.com/v2/prices/spot?currency=USD"
-)
+var coinbaseClient *shared.CoinbaseClient
 
-type coinbaseResponse struct {
-	Data coinbaseData `json:"data"`
-}
+func init() {
+	client := http.DefaultClient
+	coinbaseClient = &shared.CoinbaseClient{
+		HTTP: client,
+	}
 
-type coinbaseData struct {
-	Base     string `json:"base"`
-	Currency string `json:"currency"`
-	Amount   string `json:"amount"`
 }
 
 // FetchPriceHTTP http entrypoint for cloud function
 func FetchPriceHTTP(w http.ResponseWriter, r *http.Request) {
-	client := http.DefaultClient
 
-	resp, err := client.Get(coinbaseBTCURL)
+	resp, err := coinbaseClient.GetSpotPrice(r.Context())
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	var pd coinbaseResponse
-	json.Unmarshal(body, &pd)
 
 	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(pd)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
 }
